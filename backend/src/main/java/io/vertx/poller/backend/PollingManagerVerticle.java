@@ -154,12 +154,49 @@ public class PollingManagerVerticle extends AbstractVerticle {
     }
   }
 
-  private <T> void handleNodeUnregistration(Message<T> tMessage) {
+  private <T> void handleNodeUnregistration(Message<T> message) {
+    try {
+      JsonObject request = (JsonObject) message.body();
+      int nodeId = request.getInteger("nodeId");
+      LOG.info("Received unregistration message. " + request);
 
+      Deque<Integer> cleanedQueue = new ArrayDeque<>();
+      while (!this.queue.isEmpty()) {
+        Integer poppedId = this.queue.pop();
+        if (poppedId != nodeId) {
+          cleanedQueue.push(poppedId);
+        }
+      }
+
+      this.queue = cleanedQueue;
+      this.nodes.remove(nodeId);
+      this.scaleWorkerPool();
+    } catch (Exception e) {
+      LOG.error(e);
+    }
   }
 
-  private <T> void handleNodeRegistration(Message<T> tMessage) {
+  private <T> void handleNodeRegistration(Message<T> message) {
+    try {
+      JsonObject request = (JsonObject) message.body();
+      Node createdNode = new Node(request);
+      LOG.info("Received registration message. " + createdNode.toJson().toString());
 
+      this.nodes.put(createdNode.getId(), createdNode);
+      this.queue.add(createdNode.getId());
+      this.scaleWorkerPool();
+    } catch (Exception e) {
+      LOG.error(e);
+    }
+  }
+
+  private void scaleWorkerPool() {
+    // todo: This is a stub function not implemented due to time constraints
+    // but it would be a good idea to scale the worker pool based on the
+    // number of existing nodes. I've written things on purpose such that
+    // the scaling logic is decoupled from node handling such that vertices
+    // do not have to be 1:1 with the nodes.
+    LOG.info("Auto-scaling pool.");
   }
 
   @Override

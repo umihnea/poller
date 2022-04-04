@@ -53,6 +53,11 @@ public class APIVerticle extends AbstractVerticle {
         }
 
         JsonObject createdObject = result.result();
+
+        // Tell the polling manager that another node has been
+        // created, and it should be polled as well.
+        vertx.eventBus().send("polling_manager.register_node", createdObject);
+
         context.response().putHeader("content-type", "application/json")
           .setStatusCode(201) // http 201 created
           .end(createdObject.encode());
@@ -66,6 +71,12 @@ public class APIVerticle extends AbstractVerticle {
           context.response().setStatusCode(400).end();
           return;
         }
+
+        // Tell the polling manager to stop polling the node.
+        vertx.eventBus().send(
+          "polling_manager.unregister_node",
+          new JsonObject().put("nodeId", nodeId)
+        );
 
         context.response().setStatusCode(200).end();
       });
