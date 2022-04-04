@@ -18,6 +18,7 @@ create table record (
   state int not null,
   delay int,
   created_at timestamp,
-  primary key (id),
-  foreign key (node_id) references node(id)
+  primary key (id)
 );
+
+alter table record add foreign key (node_id) references node(id) on delete cascade;
