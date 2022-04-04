@@ -12,18 +12,20 @@ import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.serviceproxy.ServiceBinder;
 import io.vertx.sqlclient.PoolOptions;
+import io.github.cdimascio.dotenv.Dotenv;
 
 public class PollingApplication {
 
   public static void main(String[] args) {
     Vertx vertx = Vertx.vertx();
+    Dotenv dotenv = Dotenv.configure().filename(".env").load();
 
-    // todo: stash in .env file
-    MySQLConnectOptions connectOptions = new MySQLConnectOptions().setPort(3306)
-      .setHost("localhost")
-      .setDatabase("poller")
-      .setUser("mihnea")
-      .setPassword("12island21")
+    int port = Integer.parseInt(dotenv.get("DATABASE_PORT"));
+    MySQLConnectOptions connectOptions = new MySQLConnectOptions().setPort(port)
+      .setHost(dotenv.get("DATABASE_HOST"))
+      .setDatabase(dotenv.get("DATABASE_NAME"))
+      .setUser(dotenv.get("DATABASE_USER"))
+      .setPassword(dotenv.get("DATABASE_PASSWORD"))
       .setTracingPolicy(TracingPolicy.ALWAYS);
     MySQLPool client = MySQLPool.pool(vertx, connectOptions, new PoolOptions().setMaxSize(5));
 

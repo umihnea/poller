@@ -13,6 +13,9 @@
 # IntelliJ
 .idea/
 
+# .env file
+backend/src/main/resources/.env
+
 # Package Files #
 *.jar
 *.war
