@@ -1,11 +1,16 @@
 import * as React from "react";
 import {useDispatch, useSelector} from "react-redux";
-import {fetchServices, selectServices, selectServicesLoaded} from "./state";
+import {fetchServices, removeService, selectServices, selectServicesLoaded} from "./state";
 
 const ServiceItem = ({service}) => {
+  const dispatch = useDispatch();
+  const onRemove = React.useCallback(serviceId => {
+    dispatch(removeService(serviceId));
+  }, [dispatch]);
+
   return (<li>
     <span>{service.name} ({service.url})</span>
-    <button>delete</button>
+    <button onClick={() => onRemove(service.id)}>Remove</button>
     <button>edit</button>
   </li>);
 };

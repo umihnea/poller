@@ -2,6 +2,7 @@ package io.vertx.poller.backend;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.core.json.JsonArray;
@@ -22,7 +23,7 @@ public class APIVerticle extends AbstractVerticle {
   @Override
   public void start(Promise<Void> startPromise) throws Exception {
     Router router = Router.router(vertx);
-    router.route().handler(CorsHandler.create(".*."));
+    router.route().handler(CorsHandler.create(".*.").allowedMethod(HttpMethod.DELETE));
 
     INodeService nodeService = INodeService.createProxy(vertx, "shogun.nodes.service");
     IHistoryService historyService = IHistoryService.createProxy(vertx, "shogun.history.service");

@@ -59,6 +59,18 @@ class API {
       })
       .catch(error => this.handleInternalError(error));
   }
+
+  removeService(serviceId) {
+    return axios.delete(`${this.baseUrl}/node/${serviceId}`)
+      .then(response => {
+        if (response.status !== 200) {
+          return this.handleStatusCodeFailure(response);
+        }
+
+        return serviceId;
+      })
+      .catch(error => this.handleInternalError(error));
+  }
 }
 
 export default new API();
