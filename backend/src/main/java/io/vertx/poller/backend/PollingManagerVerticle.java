@@ -17,10 +17,12 @@ import java.time.Instant;
 import java.util.*;
 
 public class PollingManagerVerticle extends AbstractVerticle {
+  private static final int POLLING_FREQUENCY_IN_MS = 3000; // 3 seconds (in milliseconds)
   private static final int MAX_POOL_SIZE = 10;
   private static final Logger LOG = LoggerFactory.getLogger(PollingManagerVerticle.class);
   Map<Integer, Node> nodes;
   Deque<Integer> queue;
+  Deque<JsonObject> payloads = new ArrayDeque<>();
   List<PollingVerticle> pollingVerticles;
 
   @Override
@@ -35,6 +37,13 @@ public class PollingManagerVerticle extends AbstractVerticle {
     // Handle registering and unregistering nodes on the fly
     eventBus.consumer("polling_manager.register_node", this::handleNodeRegistration);
     eventBus.consumer("polling_manager.unregister_node", this::handleNodeUnregistration);
+
+    vertx.setPeriodic(POLLING_FREQUENCY_IN_MS, (_time) -> {
+      while (!this.payloads.isEmpty()) {
+        JsonObject payload = this.payloads.pop();
+        vertx.eventBus().send("poller.poll", payload);
+      }
+    });
 
     this.loadExistingNodes(nodeService).onComplete(asyncResult -> {
       // Spawn the pool of polling vertices
@@ -64,7 +73,12 @@ public class PollingManagerVerticle extends AbstractVerticle {
       .put("trace", UUID.randomUUID().toString())
       .put("emittedAt", Instant.now());
 
-    vertx.eventBus().send("poller.poll", payload);
+    // Instead of delivering the message directly, it
+    // gets added to a queue of payloads which get
+    // sent only when the periodic task reaches its
+    // trigger. This helps add some delay in the system
+    // and prevents being rate-limited.
+    this.payloads.add(payload); // vertx.eventBus().send("poller.poll", payload);
   }
 
   private Future<Void> loadExistingNodes(INodeService nodeService) {
@@ -104,13 +118,15 @@ public class PollingManagerVerticle extends AbstractVerticle {
 
   private <T> void handlePollResponse(Message<T> message, IHistoryService historyService) {
     JsonObject pollData = (JsonObject) message.body();
-    this.log(pollData, historyService).compose(result -> this.pick())
+    this.writeRecordToDatabase(pollData, historyService).compose(result -> this.pick())
       .onSuccess(this::query)
       .onFailure(LOG::error);
   }
 
-  private Future<Void> log(JsonObject pollData, IHistoryService historyService) {
+  private Future<Void> writeRecordToDatabase(JsonObject pollData, IHistoryService historyService) {
     Promise<Void> promise = Promise.promise();
+    LOG.info(pollData);
+
     historyService.logFromPollData(pollData, handler -> {
       if (handler.failed()) {
         promise.fail(handler.cause());

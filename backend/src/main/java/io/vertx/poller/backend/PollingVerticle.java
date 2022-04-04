@@ -75,7 +75,7 @@ public class PollingVerticle extends AbstractVerticle {
     ).compose(bufferHttpResponse -> {
       int code = bufferHttpResponse.statusCode();
       return this.packRecord(node.getId(), code);
-    });
+    }).onFailure(LOG::error);
   }
 
   private Future<JsonObject> parseUrl(String url) {
