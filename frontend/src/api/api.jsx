@@ -71,6 +71,25 @@ class API {
       })
       .catch(error => this.handleInternalError(error));
   }
+
+  updateService(serviceId, updatedData) {
+    const config = {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    return axios.put(`${this.baseUrl}/node/${serviceId}`, updatedData, config)
+      .then(response => {
+        if (response.status !== 200) {
+          return this.handleStatusCodeFailure(response);
+        }
+
+        return response.data;
+      })
+      .catch(error => this.handleInternalError(error));
+  }
+
 }
 
 export default new API();

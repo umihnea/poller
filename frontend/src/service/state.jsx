@@ -1,5 +1,6 @@
 import {createSelector, createSlice} from '@reduxjs/toolkit';
 import {API} from '../api';
+import {EMPTY_ARRAY} from "../empty";
 
 export const servicesSlice = createSlice({
   name: 'services',
@@ -35,13 +36,25 @@ export const servicesSlice = createSlice({
         ];
       }
     },
+    updateItem: (state, action) => {
+      const payload = action.payload;
+      if (state.data?.length) {
+        const updatedData = [...state.data];
+        const index = state.data.findIndex(item => item.id === payload.id);
+        updatedData[index] = payload.updatedItem;
+
+        return {...state, data: updatedData};
+      } else {
+        return state;
+      }
+    },
     setError: (state, action) => {
       state.error = action.payload;
     },
   },
 });
 
-export const {setLoaded, setLoading, setError, setData, pushItem, popItem} = servicesSlice.actions;
+export const {setLoaded, setLoading, setError, setData, pushItem, popItem, updateItem} = servicesSlice.actions;
 
 export const fetchServices = () => (dispatch, getState) => {
   dispatch(setLoading(true));
@@ -69,6 +82,16 @@ export const addService = (serviceData) => (dispatch, getState) => {
   });
 };
 
+export const updateService = (serviceId, serviceData) => (dispatch, getState) => {
+  API.updateService(serviceId, serviceData).then(data => {
+    if (!data.error) {
+      dispatch(updateItem({id: serviceId, updatedItem: serviceData}));
+    } else {
+      dispatch(setError(data.error));
+    }
+  });
+};
+
 export const removeService = (serviceId) => (dispatch, getState) => {
   API.removeService(serviceId).then(data => {
     if (data.error != null) {
@@ -79,7 +102,7 @@ export const removeService = (serviceId) => (dispatch, getState) => {
   });
 };
 
-export const selectServices = createSelector(state => state.services, services => services.data);
+export const selectServices = createSelector(state => state.services, services => services.data || EMPTY_ARRAY);
 export const selectServicesLoaded = createSelector(state => state.services, services => services.loaded ?? false);
 
 export default servicesSlice.reducer;

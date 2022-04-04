@@ -23,7 +23,7 @@ public class APIVerticle extends AbstractVerticle {
   @Override
   public void start(Promise<Void> startPromise) throws Exception {
     Router router = Router.router(vertx);
-    router.route().handler(CorsHandler.create(".*.").allowedMethod(HttpMethod.DELETE));
+    router.route().handler(CorsHandler.create(".*.").allowedMethod(HttpMethod.DELETE).allowedMethod(HttpMethod.PUT));
 
     INodeService nodeService = INodeService.createProxy(vertx, "shogun.nodes.service");
     IHistoryService historyService = IHistoryService.createProxy(vertx, "shogun.history.service");

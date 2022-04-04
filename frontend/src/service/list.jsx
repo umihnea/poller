@@ -1,33 +1,37 @@
 import * as React from "react";
 import {useDispatch, useSelector} from "react-redux";
-import {fetchServices, removeService, selectServices, selectServicesLoaded} from "./state";
+import {useNavigate} from "react-router";
+
+import {removeService, selectServices} from "./state";
+import useFetchServices from "./useFetchServices";
 
 const ServiceItem = ({service}) => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
+
   const onRemove = React.useCallback(serviceId => {
     dispatch(removeService(serviceId));
   }, [dispatch]);
 
-  return (<li>
-    <span>{service.name} ({service.url})</span>
-    <button onClick={() => onRemove(service.id)}>Remove</button>
-    <button>edit</button>
-  </li>);
+  const onEdit = React.useCallback(serviceId => {
+    navigate(`service/update/${serviceId}`);
+  }, [navigate]);
+
+  return (
+    <li>
+      <span>{service.name} ({service.url})</span>
+      <button onClick={() => onRemove(service.id)}>Remove</button>
+      <button onClick={() => onEdit(service.id)}>Edit</button>
+    </li>
+  );
 };
 
 const List = () => {
   const services = useSelector(selectServices);
-  const loaded = useSelector(selectServicesLoaded);
-  const dispatch = useDispatch();
-
-  React.useEffect(() => {
-    if (!loaded) {
-      dispatch(fetchServices());
-    }
-  }, [loaded, dispatch]);
+  useFetchServices();
 
   return (
-    (loaded && services?.length) ? (<ul>
+    (services?.length) ? (<ul>
       {services.map(
         service => (<ServiceItem service={service} key={`serviceItem-${service.id}`}/>)
       )}
