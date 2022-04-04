@@ -8,6 +8,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.poller.backend.history.IHistoryService;
 import io.vertx.poller.backend.history.Record;
 import io.vertx.poller.backend.node.INodeService;
@@ -21,6 +22,8 @@ public class APIVerticle extends AbstractVerticle {
   @Override
   public void start(Promise<Void> startPromise) throws Exception {
     Router router = Router.router(vertx);
+    router.route().handler(CorsHandler.create(".*."));
+
     INodeService nodeService = INodeService.createProxy(vertx, "shogun.nodes.service");
     IHistoryService historyService = IHistoryService.createProxy(vertx, "shogun.history.service");
 
