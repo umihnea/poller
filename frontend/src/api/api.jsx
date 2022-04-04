@@ -1,5 +1,11 @@
 import axios from 'axios';
 
+const JSON_CONTENT_TYPE = {
+  headers: {
+    "Content-Type": "application/json",
+  },
+};
+
 class API {
   constructor() {
     this.baseUrl = 'http://localhost:8080/api';
@@ -43,13 +49,7 @@ class API {
       createdAt: new Date(Date.now()).toISOString()
     };
 
-    const config = {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-
-    return axios.post(`${this.baseUrl}/node`, payload, config)
+    return axios.post(`${this.baseUrl}/node`, payload, JSON_CONTENT_TYPE)
       .then(response => {
         if (response.status !== 201) {
           return this.handleStatusCodeFailure(response);
@@ -73,13 +73,7 @@ class API {
   }
 
   updateService(serviceId, updatedData) {
-    const config = {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-
-    return axios.put(`${this.baseUrl}/node/${serviceId}`, updatedData, config)
+    return axios.put(`${this.baseUrl}/node/${serviceId}`, updatedData, JSON_CONTENT_TYPE)
       .then(response => {
         if (response.status !== 200) {
           return this.handleStatusCodeFailure(response);
@@ -90,6 +84,18 @@ class API {
       .catch(error => this.handleInternalError(error));
   }
 
+  getHistory(start, end) {
+    const query = { start, end };
+    return axios.post(`${this.baseUrl}/history`, query, JSON_CONTENT_TYPE)
+      .then(response => {
+        if (response.status !== 200) {
+          return this.handleStatusCodeFailure(response);
+        }
+
+        return response.data;
+      })
+      .catch(error => this.handleInternalError(error));
+  }
 }
 
 export default new API();
