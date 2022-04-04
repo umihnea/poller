@@ -39,7 +39,7 @@ public class NodeRepository {
       .compose(rows -> this.queryLastInsertedId(rows, attributes))
       .onComplete(lastInsertedIdResult -> {
         if (lastInsertedIdResult.failed()) {
-          LOG.error("Could not retrieve last inserted ID.");
+          LOG.error("Could not retrieve last inserted ID.", lastInsertedIdResult.cause());
           handler.handle(Future.failedFuture(
               new Throwable("Could not retrieve last inserted ID.")
             )
@@ -60,11 +60,16 @@ public class NodeRepository {
       return Future.failedFuture("Failed insert statement.");
     }
 
+    Tuple slicedAttributes = Tuple.of(
+      attributes.get(String.class, 0),
+      attributes.get(String.class, 1)
+    );
+
     return this.pooledClient
       // select last_insert_id() is hard to parse and is too much work
       // and unreliable in the case of multiple writers anyway
-      .preparedQuery("select id from node where name=? and url=? and created_at=? order by id desc limit 1;")
-      .execute(attributes).compose(
+      .preparedQuery("select id from node where name=? and url=? order by id desc limit 1;")
+      .execute(slicedAttributes).compose(
         rows -> {
           Integer lastId = rows.iterator().next().getInteger("id");
           return Future.succeededFuture(lastId);
