@@ -80,6 +80,10 @@ public class PollingVerticle extends AbstractVerticle {
 
   private Future<JsonObject> parseUrl(String url) {
     try {
+      if (!url.contains("://")) {
+        url = "http://" + url;
+      }
+
       URL parsedUrl = new URL(url);
       int port = parsedUrl.getPort() != -1 ? parsedUrl.getPort() : parsedUrl.getDefaultPort();
       return Future.succeededFuture(new JsonObject()

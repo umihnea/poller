@@ -37,16 +37,16 @@ export const servicesSlice = createSlice({
       }
     },
     updateItem: (state, action) => {
-      const payload = action.payload;
-      if (state.data?.length) {
-        const updatedData = [...state.data];
-        const index = state.data.findIndex(item => item.id === payload.id);
-        updatedData[index] = payload.updatedItem;
+      return {
+        ...state,
+        data: state.data.map(item => {
+          if (item.id === action.payload.id) {
+            return action.payload;
+          }
 
-        return {...state, data: updatedData};
-      } else {
-        return state;
-      }
+          return item;
+        }),
+      };
     },
     setError: (state, action) => {
       state.error = action.payload;
@@ -85,7 +85,10 @@ export const addService = (serviceData) => (dispatch, getState) => {
 export const updateService = (serviceId, serviceData) => (dispatch, getState) => {
   API.updateService(serviceId, serviceData).then(data => {
     if (!data.error) {
-      dispatch(updateItem({id: serviceId, updatedItem: serviceData}));
+      dispatch(updateItem({
+        ...serviceData,
+        id: parseInt(serviceId, 10)
+      }));
     } else {
       dispatch(setError(data.error));
     }

@@ -17,7 +17,8 @@ import java.time.Instant;
 import java.util.*;
 
 public class PollingManagerVerticle extends AbstractVerticle {
-  private static final int POLLING_FREQUENCY_IN_MS = 3000; // 3 seconds (in milliseconds)
+  private static final int POLLING_FREQUENCY_IN_MS = 500; // 0.5 seconds
+  private static final int MIN_POOL_SIZE = 1;
   private static final int MAX_POOL_SIZE = 10;
   private static final Logger LOG = LoggerFactory.getLogger(PollingManagerVerticle.class);
   Map<Integer, Node> nodes;
@@ -36,6 +37,7 @@ public class PollingManagerVerticle extends AbstractVerticle {
 
     // Handle registering and unregistering nodes on the fly
     eventBus.consumer("polling_manager.register_node", this::handleNodeRegistration);
+    eventBus.consumer("polling_manager.notify_node_changed", message -> this.handleNodeModified(message, nodeService));
     eventBus.consumer("polling_manager.unregister_node", this::handleNodeUnregistration);
 
     vertx.setPeriodic(POLLING_FREQUENCY_IN_MS, (_time) -> {
@@ -46,8 +48,13 @@ public class PollingManagerVerticle extends AbstractVerticle {
     });
 
     this.loadExistingNodes(nodeService).onComplete(asyncResult -> {
-      // Spawn the pool of polling vertices
-      int initialSize = Math.max(this.nodes.size(), MAX_POOL_SIZE);
+      // Spawn the pool of polling vertices. Clip the value between
+      // a minimum and a maximum value.
+      int initialSize = Math.max(
+        MIN_POOL_SIZE,
+        Math.min(this.nodes.size(), MAX_POOL_SIZE)
+      );
+
       this.pollingVerticles = new ArrayList<>();
       this.queue = new ArrayDeque<>();
 
@@ -95,6 +102,7 @@ public class PollingManagerVerticle extends AbstractVerticle {
       for (Node node : asyncResult.result()) {
         this.nodes.put(node.getId(), node);
       }
+
       promise.complete();
     });
 
@@ -184,7 +192,26 @@ public class PollingManagerVerticle extends AbstractVerticle {
 
       this.nodes.put(createdNode.getId(), createdNode);
       this.queue.add(createdNode.getId());
+      this.query(createdNode);
       this.scaleWorkerPool();
+    } catch (Exception e) {
+      LOG.error(e);
+    }
+  }
+
+  private <T> void handleNodeModified(Message<T> message, INodeService nodeService) {
+    try {
+      JsonObject request = (JsonObject) message.body();
+      int nodeId = request.getInteger("nodeId");
+      LOG.info("Received node modification message. " + request);
+
+      this.loadExistingNodes(nodeService).onComplete(asyncResult -> {
+        this.payloads.clear();
+        this.queue.clear();
+        for (Node node : this.nodes.values()) {
+          this.query(node);
+        }
+      });
     } catch (Exception e) {
       LOG.error(e);
     }

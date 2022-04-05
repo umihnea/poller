@@ -91,6 +91,11 @@ public class APIVerticle extends AbstractVerticle {
           return;
         }
 
+        vertx.eventBus().send(
+          "polling_manager.notify_node_changed",
+          new JsonObject().put("nodeId", nodeId)
+        );
+
         context.response().setStatusCode(200).end();
       });
     });
